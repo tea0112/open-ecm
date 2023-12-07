@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  db:
+    container_name: pgopenecm_container
+    image: postgres:16.1-alpine3.18
+    environment:
+      POSTGRES_USER: openecm
+      POSTGRES_PASSWORD: Openecm!23
+      POSTGRES_DB: openecm
+    ports:
+      - "5432:5432"
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
