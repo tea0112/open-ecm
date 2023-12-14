@@ -1,2 +1,2 @@
-- The application reads configuration from $HOME/.openecm/config.yaml
-    - Use the predefined configuration(config.yml) in "configs" directory
+- The application reads configuration from $HOME/.openecm/config.env
+    - Use the predefined configuration(config.env) in "configs" directory

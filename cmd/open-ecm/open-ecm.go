@@ -3,17 +3,35 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
+	"open-ecm/users"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
+type PortgresConfig struct {
+	Username string
+	Password string
+	Database string
+	Host     string
+	Port     int
+}
+
+type AppConfig struct {
+	Port     int
+	Mode     string
+	Postgres PortgresConfig
+}
+
 func main() {
+	var appConfig AppConfig
+
 	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	viper.SetConfigType("env")
 	viper.AddConfigPath("$HOME/.openecm")
 	viper.AutomaticEnv()
 
@@ -22,12 +40,21 @@ func main() {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 
-	postgresUser := viper.GetString("postgres.username")
-	postgresPasswd := viper.GetString("postgres.password")
-	postgresDb := viper.GetString("postgres.database")
-	postgresHost := viper.GetString("postgres.host")
-	postgresPort := viper.GetInt32("postgres.port")
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", postgresHost, postgresPort, postgresUser, postgresPasswd, postgresDb)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer logger.Sync()
+	sugar := logger.Sugar()
+
+	appConfig.Postgres.Username = viper.GetString("POSTGRES_USERNAME")
+	appConfig.Postgres.Password = viper.GetString("POSTGRES_PASSWORD")
+	appConfig.Postgres.Database = viper.GetString("POSTGRES_DATABASE")
+	appConfig.Postgres.Host = viper.GetString("POSTGRES_HOST")
+	appConfig.Postgres.Port = viper.GetInt("POSTGRES_PORT")
+
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", appConfig.Postgres.Host, appConfig.Postgres.Port, appConfig.Postgres.Username, appConfig.Postgres.Password, appConfig.Postgres.Database)
+	sugar.Debug(connStr)
 
 	db, err := sql.Open("postgres", connStr)
 	defer db.Close()
@@ -35,12 +62,29 @@ func main() {
 		panic(err)
 	}
 
-	appPort := viper.GetString("app.port")
+	appConfig.Port = viper.GetInt("APP_PORT")
+
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello World"))
+
+	v1ApiRouter := chi.NewRouter()
+
+	v1ApiRouter.Route("/", func(r chi.Router) {
+		r.Route("/users", func(r chi.Router) {
+			r.Post("/", users.CreateUser)
+		})
 	})
 
-	http.ListenAndServe(fmt.Sprintf(":%s", appPort), r)
+	r.Mount("/api/v1", v1ApiRouter)
+
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("This URL doesn't belong to the OpenECM"))
+	})
+
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("Method not allowed"))
+	})
+
+	http.ListenAndServe(fmt.Sprintf(":%d", appConfig.Port), r)
 }

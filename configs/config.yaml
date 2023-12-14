@@ -1,5 +1,7 @@
 app:
   port: 8080
+# dev, prod
+  mode: dev
 postgres:
   username: openecm
   password: Openecm!23
