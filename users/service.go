@@ -6,7 +6,8 @@ import (
 )
 
 type service interface {
-	createUser(context.Context, User) (User, error)
+	saveUser(context.Context, User) (User, error)
+	getUser(context.Context, int64) (User, error)
 }
 
 type serviceImpl struct {
@@ -18,6 +19,10 @@ func newService(db *sql.DB) service {
 	return serviceImpl{db: db, repo: newRepository(db)}
 }
 
-func (s serviceImpl) createUser(ctx context.Context, user User) (savedUser User, err error) {
-	return s.repo.persistUser(ctx, user)
+func (s serviceImpl) saveUser(ctx context.Context, user User) (savedUser User, err error) {
+	return s.repo.saveUser(ctx, user)
+}
+
+func (s serviceImpl) getUser(ctx context.Context, id int64) (user User, err error) {
+	return s.repo.getUser(ctx, id)
 }
