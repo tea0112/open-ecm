@@ -70,7 +70,8 @@ func main() {
 
 	v1ApiRouter.Route("/", func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
-			r.Post("/", users.CreateUser)
+			userController := users.NewController(db)
+			r.Post("/", userController.HandleCreateUser)
 		})
 	})
 
