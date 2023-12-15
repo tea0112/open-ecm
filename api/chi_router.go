@@ -7,6 +7,7 @@ import (
 	"open-ecm/apps"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 )
 
@@ -19,6 +20,9 @@ func NewChiMainRouter(db *sql.DB, logger *zap.Logger) *chi.Mux {
 			h.ServeHTTP(w, r)
 		})
 	})
+
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Logger)
 
 	r.Mount("/api/v1", v1api.NewUsersRouter(db))
 

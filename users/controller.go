@@ -31,14 +31,15 @@ func (c Controller) HandleSaveUser(w http.ResponseWriter, r *http.Request) {
 
 	savedUser, err := c.srv.saveUser(r.Context(), newUser)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(err.Error())
 	}
 	logger.Debug("saved user", zap.String("save_user", fmt.Sprintf("%#v", savedUser)))
 	w.WriteHeader(http.StatusCreated)
 	returnedUser, err := json.Marshal(savedUser)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(err.Error())
 	}
 	w.Write(returnedUser)
 }
@@ -50,19 +51,39 @@ func (c Controller) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.ParseInt(userId, 10, 64)
 	if err != nil {
-		logger.Debug("error", zap.String("error", err.Error()))
-		panic(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(err.Error())
 	}
 
 	user, err := c.srv.getUser(r.Context(), id)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(err.Error())
 	}
 
 	response, err := json.Marshal(user)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(err.Error())
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)
+}
+
+func (c Controller) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
+	logger := apps.LoggerFromCtx(r.Context())
+	users, err := c.srv.getUsers(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(err.Error())
+	}
+
+	usersJSON, err := json.Marshal(users)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(err.Error())
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(usersJSON)
 }

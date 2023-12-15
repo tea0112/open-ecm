@@ -14,6 +14,7 @@ func NewUsersRouter(db *sql.DB) *chi.Mux {
 		r.Route("/users", func(r chi.Router) {
 			userController := users.NewController(db)
 			r.Get("/{userId}", userController.HandleGetUser)
+			r.Get("/", userController.HandleGetUsers)
 			r.Post("/", userController.HandleSaveUser)
 		})
 	})
