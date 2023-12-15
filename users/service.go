@@ -9,6 +9,7 @@ type service interface {
 	saveUser(context.Context, User) (*User, error)
 	getUser(context.Context, int64) (*User, error)
 	getUsers(context.Context) ([]User, error)
+	deleteUser(context.Context, int64) (*User, error)
 }
 
 type serviceImpl struct {
@@ -42,4 +43,12 @@ func (s serviceImpl) getUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return retrievedUsers, nil
+}
+
+func (s serviceImpl) deleteUser(ctx context.Context, id int64) (*User, error) {
+	deletedUser, err := s.repo.deleteUser(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return deletedUser, nil
 }

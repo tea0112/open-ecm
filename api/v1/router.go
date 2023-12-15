@@ -16,6 +16,7 @@ func NewUsersRouter(db *sql.DB) *chi.Mux {
 			r.Get("/{userId}", userController.HandleGetUser)
 			r.Get("/", userController.HandleGetUsers)
 			r.Post("/", userController.HandleSaveUser)
+			r.Delete("/{userId}", userController.HandleDeleteUser)
 		})
 	})
 

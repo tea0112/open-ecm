@@ -13,6 +13,7 @@ type repository interface {
 	getUser(context.Context, int64) (*User, error)
 	getUsers(context.Context) ([]User, error)
 	saveUser(context.Context, User) (*User, error)
+	deleteUser(context.Context, int64) (*User, error)
 }
 
 type repositoryImpl struct {
@@ -42,7 +43,7 @@ func (r repositoryImpl) getUser(ctx context.Context, id int64) (*User, error) {
 	logger := apps.LoggerFromCtx(ctx)
 	err := r.db.QueryRow(`
 	select id, username, email, password, created_at
-	from users where id = $1;
+	from users where id = $1 and deleted_at is null;
 	`, id).Scan(&retrievedUser.Id, &retrievedUser.Username, &retrievedUser.Email, &retrievedUser.Password, &retrievedUser.CreatedAt)
 	if err != nil {
 		logger.Debug("user repository error", zap.String("error", err.Error()))
@@ -57,7 +58,8 @@ func (r repositoryImpl) getUsers(ctx context.Context) ([]User, error) {
 	var retrievedUsers []User
 
 	rows, err := r.db.Query(`
-	select id, username, email, password, created_at, updated_at from users;
+		select id, username, email, password, created_at, updated_at from users
+		where deleted_at is null;
 	`)
 	if err != nil {
 		return nil, err
@@ -70,4 +72,30 @@ func (r repositoryImpl) getUsers(ctx context.Context) ([]User, error) {
 	}
 
 	return retrievedUsers, nil
+}
+
+func (r repositoryImpl) deleteUser(ctx context.Context, id int64) (*User, error) {
+	row := r.db.QueryRow(`
+		update users
+		set deleted_at = $1
+		where id = $2 and deleted_at is null
+		returning id, username, email, password, created_at, updated_at;
+	`, time.Now(), id)
+	if err := row.Err(); err != nil {
+		return nil, err
+	}
+
+	var deletedUser User
+	err := row.Scan(
+		&deletedUser.Id,
+		&deletedUser.Username,
+		&deletedUser.Email,
+		&deletedUser.Password,
+		&deletedUser.CreatedAt,
+		&deletedUser.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deletedUser, nil
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	v1api "open-ecm/api/v1"
 	"open-ecm/apps"
@@ -20,9 +21,13 @@ func NewChiMainRouter(db *sql.DB, logger *zap.Logger) *chi.Mux {
 			h.ServeHTTP(w, r)
 		})
 	})
-
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Logger)
+	r.Use(func(handler http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger.Info(fmt.Sprintf("%s - %s%s", r.Method, r.Host, r.URL))
+			handler.ServeHTTP(w, r)
+		})
+	})
 
 	r.Mount("/api/v1", v1api.NewUsersRouter(db))
 
