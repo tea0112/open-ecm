@@ -5,7 +5,6 @@ go 1.21.5
 require (
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/lib/pq v1.10.9
-	github.com/mattn/go-colorable v0.1.13
 	github.com/spf13/viper v1.18.0
 	go.uber.org/zap v1.26.0
 )
@@ -14,7 +13,6 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
