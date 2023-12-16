@@ -10,10 +10,10 @@ import (
 )
 
 type repository interface {
-	getUser(context.Context, int64) (*User, error)
-	getUsers(context.Context) ([]User, error)
-	saveUser(context.Context, User) (*User, error)
-	deleteUser(context.Context, int64) (*User, error)
+	getUser(context.Context, *sql.Tx, int64) (*User, error)
+	getUsers(context.Context, *sql.Tx) ([]User, error)
+	saveUser(context.Context, *sql.Tx, User) (*User, error)
+	deleteUser(context.Context, *sql.Tx, int64) (*User, error)
 }
 
 type repositoryImpl struct {
@@ -24,9 +24,9 @@ func newRepository(db *sql.DB) repository {
 	return repositoryImpl{db}
 }
 
-func (r repositoryImpl) saveUser(ctx context.Context, user User) (*User, error) {
+func (r repositoryImpl) saveUser(ctx context.Context, tx *sql.Tx, user User) (*User, error) {
 	var savedUser User
-	err := r.db.QueryRow(`
+	err := tx.QueryRow(`
 	insert into users(username, email, password, created_at)
 	values ($1, $2, $3, $4)
 	returning id, username, email, password, created_at;
@@ -38,10 +38,10 @@ func (r repositoryImpl) saveUser(ctx context.Context, user User) (*User, error) 
 	return &savedUser, nil
 }
 
-func (r repositoryImpl) getUser(ctx context.Context, id int64) (*User, error) {
+func (r repositoryImpl) getUser(ctx context.Context, tx *sql.Tx, id int64) (*User, error) {
 	var retrievedUser User
 	logger := apps.LoggerFromCtx(ctx)
-	err := r.db.QueryRow(`
+	err := tx.QueryRow(`
 	select id, username, email, password, created_at
 	from users where id = $1 and deleted_at is null;
 	`, id).Scan(&retrievedUser.Id, &retrievedUser.Username, &retrievedUser.Email, &retrievedUser.Password, &retrievedUser.CreatedAt)
@@ -54,10 +54,10 @@ func (r repositoryImpl) getUser(ctx context.Context, id int64) (*User, error) {
 	return &retrievedUser, nil
 }
 
-func (r repositoryImpl) getUsers(ctx context.Context) ([]User, error) {
+func (r repositoryImpl) getUsers(ctx context.Context, tx *sql.Tx) ([]User, error) {
 	var retrievedUsers []User
 
-	rows, err := r.db.Query(`
+	rows, err := tx.Query(`
 		select id, username, email, password, created_at, updated_at from users
 		where deleted_at is null;
 	`)
@@ -74,8 +74,8 @@ func (r repositoryImpl) getUsers(ctx context.Context) ([]User, error) {
 	return retrievedUsers, nil
 }
 
-func (r repositoryImpl) deleteUser(ctx context.Context, id int64) (*User, error) {
-	row := r.db.QueryRow(`
+func (r repositoryImpl) deleteUser(ctx context.Context, tx *sql.Tx, id int64) (*User, error) {
+	row := tx.QueryRow(`
 		update users
 		set deleted_at = $1
 		where id = $2 and deleted_at is null
